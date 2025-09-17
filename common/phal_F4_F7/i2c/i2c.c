@@ -71,9 +71,15 @@ bool HAL_I2C_gen_start(I2C_TypeDef* i2c, uint8_t address, uint8_t length, I2CDir
 
 bool PHAL_I2C_read(I2C_TypeDef* i2c, uint8_t* data_a) { 
 
-    // I2C1->CR1 &= ~(1<<10);  // clear the ACK bit 
-    // uint8_t temp = I2C1->SR1 | I2C1->SR2;  // read SR1 and SR2 to clear the ADDR bit.... EV6 condition
-    // I2C1->CR1 |= (1<<9);  // Stop I2C
+    //generate START -> control register 1 until status register 1 is ready 
+    i2c->CR1 |= I2C_CR1_START;
+    while(!(i2c->SR1 & I2C_SR1_SB))
+
+    //start to read
+
+    I2C1->CR1 &= ~(1<<10);  // clear the ACK bit 
+    uint8_t temp = I2C1->SR1 | I2C1->SR2;  // read SR1 and SR2 to clear the ADDR bit.... EV6 condition
+    I2C1->CR1 |= (1<<9);  // Stop I2C
 
     return true;
     
