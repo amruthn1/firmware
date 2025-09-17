@@ -13,7 +13,12 @@
 #define _PHAL_I2C_H
 
 #include <stdbool.h>
-#include "external/STM32CubeF4/Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f407xx.h"
+
+#if defined(STM32F4xx) || defined(STM32F407xx)
+  #include "stm32f4xx.h"
+#elif defined(STM32F7xx) || defined(STM32F732xx)
+  #include "stm32f7xx.h"
+#endif
 
 #define PHAL_I2C_TX_TIMEOUT 1000 //(1000U)
 #define PHAL_I2C_RX_TIMEOUT 1000 //(1000U)
