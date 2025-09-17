@@ -19,6 +19,14 @@ GPIOInitConfig_t i2c_gpio_config[] = {
     GPIO_INIT_I2C1_SDA_PB9
 };
 
+#if defined(STM32F4xx) || defined(STM32F407xx)
+  #define IS_F4XX 1
+  #define IS_F7XX 0
+#elif defined(STM32F7xx) || defined(STM32F732xx)
+  #define IS_F4XX 0
+  #define IS_F7XX 1
+#endif
+
 bool PHAL_initI2C(I2C_TypeDef* i2c) {
 
     if (i2c == I2C1) {
@@ -37,14 +45,16 @@ bool PHAL_initI2C(I2C_TypeDef* i2c) {
     i2c -> CR1 &= ~(1<<15);
 
     //Set clock speed to 45 MHz
-    i2c -> CR2 |= (45<<0);
+    i2c -> CR2 |= (45<<0);//fix value
 
-    //Configure clock control register
-    i2c -> CCR = 225<<0;
-
-    //Configure time rise register
-    i2c -> TRISE = 46;
-
+    //Configure clock control register and time rise register
+    #if IS_F4XX     
+        i2c -> CCR = 225<<0;//fix value
+        i2c -> TRISE = 46; //fix value
+    #elif IS_F7XX
+        i2c -> TIMINGR = 0x40912732; //fix value 
+    #endif
+    
     //Enable I2C
     i2c -> CR1 |= I2C_CR1_PE;
 
@@ -71,15 +81,15 @@ bool HAL_I2C_gen_start(I2C_TypeDef* i2c, uint8_t address, uint8_t length, I2CDir
 
 bool PHAL_I2C_read(I2C_TypeDef* i2c, uint8_t* data_a) { 
 
-    //generate START -> control register 1 until status register 1 is ready 
-    i2c->CR1 |= I2C_CR1_START;
-    while(!(i2c->SR1 & I2C_SR1_SB))
+    // //generate START -> control register 1 until status register 1 is ready 
+    // i2c->CR1 |= I2C_CR1_START;
+    // while(!(i2c->SR1 & I2C_SR1_SB))
 
-    //start to read
+    // //start to read
 
-    I2C1->CR1 &= ~(1<<10);  // clear the ACK bit 
-    uint8_t temp = I2C1->SR1 | I2C1->SR2;  // read SR1 and SR2 to clear the ADDR bit.... EV6 condition
-    I2C1->CR1 |= (1<<9);  // Stop I2C
+    // I2C1->CR1 &= ~(1<<10);  // clear the ACK bit 
+    // uint8_t temp = I2C1->SR1 | I2C1->SR2;  // read SR1 and SR2 to clear the ADDR bit.... EV6 condition
+    // I2C1->CR1 |= (1<<9);  // Stop I2C
 
     return true;
     
