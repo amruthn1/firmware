@@ -166,6 +166,19 @@ bool PHAL_I2C_read(I2C_TypeDef* i2c, uint8_t* data_a) {
 }
 
 bool PHAL_I2C_read_multi(I2C_TypeDef* i2c, uint8_t* data_a, uint8_t size) {
+    for (uint8_t i = 0; i < size; i++) {
+        if (!PHAL_I2C_read(i2c, &data_a[i])) {
+            return false;
+        }
+    }
+
+    // Stop condition at the end
+    #if IS_F4XX
+        i2c->CR1 |= I2C_CR1_STOP;
+    #elif IS_F7XX
+        i2c->CR2 |= I2C_CR2_STOP;
+    #endif
+
     return true;
 }
 
