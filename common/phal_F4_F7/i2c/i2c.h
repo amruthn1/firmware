@@ -42,6 +42,4 @@ bool PHAL_I2C_gen_stop(I2C_TypeDef* i2c);
 
 bool PHAL_I2C_read_multi(I2C_TypeDef* i2c, uint8_t* data_a, uint8_t size);
 
-bool PHAL_I2C_gen_stop(I2C_TypeDef* i2c);
-
 #endif
