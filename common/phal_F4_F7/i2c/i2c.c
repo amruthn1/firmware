@@ -99,13 +99,13 @@ bool HAL_I2C_gen_start(I2C_TypeDef* i2c, uint8_t address, uint8_t length, I2CDir
             return false;
 
         //Clear previous configurations
-        i2c->CR2 &= ~(I2C_CR2_SADD
-                    | I2C_CR2_RD_WRN
-                    | I2C_CR2_NBYTES
-                    | I2C_CR2_AUTOEND
-                    | I2C_CR2_RELOAD
-                    | I2C_CR2_START
-                    | I2C_CR2_STOP);
+        i2c->CR2 &= ~(I2C_CR2_SADD // clear slave address field
+                    | I2C_CR2_RD_WRN // clear direction bit
+                    | I2C_CR2_NBYTES // clear number of bytes
+                    | I2C_CR2_AUTOEND // clear STOP condition if previously generated
+                    | I2C_CR2_RELOAD // clear whether transfer is split into chunks
+                    | I2C_CR2_START // clear prior START condition
+                    | I2C_CR2_STOP); // clear prior STOP condition
 
         //Configure for start condition
         if (mode == PHAL_I2C_MODE_RX) {
@@ -185,50 +185,63 @@ bool PHAL_I2C_read_multi(I2C_TypeDef* i2c, uint8_t* data_a, uint8_t size) {
 bool PHAL_I2C_write(I2C_TypeDef* i2c, uint8_t data) {
     uint32_t timeout = 0;
 
-    #if ISF4XX 
-        //wait for TXE flag
+    #if IS_F4XX
+        // Wait for TXE
         while (!(i2c->SR1 & I2C_SR1_TXE) && ++timeout < PHAL_I2C_TX_TIMEOUT);
-        if (timeout >= PHAL_I2C_TX_TIMEOUT) 
-            return false;
-        //Write data
+        if (timeout >= PHAL_I2C_TX_TIMEOUT) return false;
+
+        // Write data
         i2c->DR = data;
-        //Wait for BTF flag
+
+        // Wait for BTF
         timeout = 0;
         while (!(i2c->SR1 & I2C_SR1_BTF) && ++timeout < PHAL_I2C_TX_TIMEOUT);
-        if (timeout >= PHAL_I2C_TX_TIMEOUT) 
-            return false;
+        if (timeout >= PHAL_I2C_TX_TIMEOUT) return false;
+
     #elif IS_F7XX
-        //wait for TXE flag    
+        // Wait for TXIS (ready to transmit)
         while (!(i2c->ISR & I2C_ISR_TXIS) && ++timeout < PHAL_I2C_TX_TIMEOUT);
-        if (timeout >= PHAL_I2C_TX_TIMEOUT) 
-            return false;
-        //Write data
+        if (timeout >= PHAL_I2C_TX_TIMEOUT) return false;
+
+        // Write data
         i2c->TXDR = data;
-        timeout = 0;
-        //Wait for TC flag
-        while (!(i2c->ISR & I2C_ISR_TC) && ++timeout < PHAL_I2C_TX_TIMEOUT);
-        if (timeout >= PHAL_I2C_TX_TIMEOUT) 
-            return false;
-    #endif
+
+        #endif
 
     return true;
 }
 
 bool PHAL_I2C_write_multi(I2C_TypeDef* i2c, uint8_t* data, uint8_t size) {
     for (uint8_t i = 0; i < size; i++) {
-        if (!PHAL_I2C_write(i2c, data[i])) {
-            return false;
-        }
+        if (!PHAL_I2C_write(i2c, data[i])) return false;
     }
-    // Stop 
+
+    // After last byte, ensure transfer complete
+    #if IS_F7XX
+        uint32_t timeout = 0;
+        while (!(i2c->ISR & I2C_ISR_TC) && ++timeout < PHAL_I2C_TX_TIMEOUT);
+        if (timeout >= PHAL_I2C_TX_TIMEOUT) return false;
+    #endif
+
+    // Generate STOP
     #if IS_F4XX
         i2c->CR1 |= I2C_CR1_STOP;
     #elif IS_F7XX
         i2c->CR2 |= I2C_CR2_STOP;
     #endif
+
     return true;
 }
 
 bool PHAL_I2C_gen_stop(I2C_TypeDef* i2c) {
+    #if IS_F4XX
+        // Generate STOP condition (set STOP bit in CR1)
+        i2c->CR1 |= I2C_CR1_STOP;
+
+    #elif IS_F7XX
+        // Generate STOP condition (set STOP bit in CR2)
+        i2c->CR2 |= I2C_CR2_STOP;
+    #endif
+
     return true;
 }
