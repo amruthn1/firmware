@@ -13,7 +13,7 @@
 #include "f4_testing.h"
 
 // Guard so cmake doesn't compile all tests
-#if (F4_TESTING_CHOSEN == I2C_TEST)
+#if (F4_TESTING_CHOSEN == TEST_I2C)
 
 #include "common/log/log.h"
 #include "common/phal/gpio.h"
@@ -87,14 +87,14 @@ int main() {
     PHAL_initI2C(I2C1);
 
     schedInit(APB1ClockRateHz);
-    taskCreate(i2cinit, 500);
+    // taskCreate(i2cinit, 500);
     schedStart();
 
     return 0;
 }
 
 void i2cinit() {
-    printf("I2C INIT\n");
+    // printf("I2C INIT\n");
 }
 
 void HardFault_Handler() {
