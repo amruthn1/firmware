@@ -1,8 +1,7 @@
 /**
  * @file i2c_test.c
  * @author Aditya Saini and Amruth Nadimpally
- * @brief  Demo for F4 I2C testing
- *         - I2C communication test with dummy device
+ * @brief  Demo for F4 I2C testing 
  * @version 0.1
  * @date 2025-09-25
  *
