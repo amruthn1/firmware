@@ -11,11 +11,12 @@
 
 #include <stdbool.h>
 
-
 bool BMM350_init();
 
-bool BMM350_read_data();
+bool BMM350_read_reg();
 
-bool BMM350_set_power_mode();
+bool BMM350_read_multi_reg();
+
+bool BMM350_get_data();
 
 bool BMM350_reset();
