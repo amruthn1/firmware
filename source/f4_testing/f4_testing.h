@@ -5,8 +5,11 @@
 #define TEST_LED_BLINK     0
 #define TEST_FREERTOS_DEMO 1
 #define TEST_ONBOARDING_26 2
+#define TEST_MMC 3
 
 // Change this define to set the test compiled
-#define F4_TESTING_CHOSEN TEST_ONBOARDING_26
+#define F4_TESTING_CHOSEN TEST_MMC
 
 #endif // __F4_TESTING__
+
+
