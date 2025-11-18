@@ -152,8 +152,8 @@ void ledblink4() {
 }
 
 void mmcTest() {
-    uint32_t nextStartTick = getTick();   
-    uint32_t measReadyTick = 0;          
+    uint32_t nextStartTick = getTick();
+    uint32_t measReadyTick = 0;
     bool measuring = false;
 
     uint8_t tx_write[2];
@@ -161,35 +161,35 @@ void mmcTest() {
     uint8_t tx_read[8];
     uint8_t rx_read[8];
 
-    // Make sure CS is high before starting (idle)
+    // make sure CS is high before starting
     PHAL_writeGPIO(GPIOA, 4, true);
 
     while (1) {
         uint32_t now = getTick();
         int32_t diffStart = (int32_t)(now - nextStartTick);
 
-        // Start a new measurement when scheduled 
+        // start a new measurement when scheduled
         if (!measuring && (diffStart >= 0)) {
-            tx_write[0] = 0x09;  // register address
-            tx_write[1] = 0x01;  
+            tx_write[0] = 0x09; // register address
+            tx_write[1] = 0x01;
 
             PHAL_writeGPIO(GPIOA, 4, false); // CS low
             PHAL_SPI_transfer_noDMA(&spi1_cfg, tx_write, 2, 2, rx_write);
-            PHAL_writeGPIO(GPIOA, 4, true);  // CS high
+            PHAL_writeGPIO(GPIOA, 4, true); // CS high
 
             measuring = true;
-            // default measurement time for BW=100Hz is ~8ms 
+            // default measurement time for BW=100Hz is ~8ms
             measReadyTick = now + 8;
 
-            // schedule next measurement start 
+            // schedule next measurement start
             nextStartTick = now + 50;
         }
 
-        // If measurement ready, read registers and parse
+        // if measurement ready, read registers and parse
         if (measuring) {
             int32_t diffReady = (int32_t)(now - measReadyTick);
             if (diffReady >= 0) {
-                // Read 7 data bytes starting at register 0x00 with read bit set (0x80)
+                // read 7 data bytes starting at register 0x00 with read bit set (0x80)
                 tx_read[0] = 0x80; // read starting at 0x00 (read bit = 1)
                 tx_read[1] = 0;
                 tx_read[2] = 0;
@@ -211,9 +211,21 @@ void mmcTest() {
                 uint32_t Z1 = rx_read[6];
                 uint32_t XYZ2 = rx_read[7];
 
-                raw_x = (int32_t)((X0 << 10) | (X1 << 2) | ((XYZ2 >> 6) & 0x03));
-                raw_y = (int32_t)((Y0 << 10) | (Y1 << 2) | ((XYZ2 >> 4) & 0x03));
-                raw_z = (int32_t)((Z0 << 10) | (Z1 << 2) | ((XYZ2 >> 2) & 0x03));
+                uint32_t ux = (X0 << 10) | (X1 << 2) | ((XYZ2 >> 6) & 0x03);
+                uint32_t uy = (Y0 << 10) | (Y1 << 2) | ((XYZ2 >> 4) & 0x03);
+                uint32_t uz = (Z0 << 10) | (Z1 << 2) | ((XYZ2 >> 2) & 0x03);
+
+                // sign extend 18 bit to 32 bit because nums above bit 17 indicate negative nums
+                if (ux & (1U << 17))
+                    ux |= 0xFFFC0000U;
+                if (uy & (1U << 17))
+                    uy |= 0xFFFC0000U;
+                if (uz & (1U << 17))
+                    uz |= 0xFFFC0000U;
+
+                raw_x = (int32_t)ux;
+                raw_y = (int32_t)uy;
+                raw_z = (int32_t)uz;
 
                 // done reading this measurement
                 measuring = false;
