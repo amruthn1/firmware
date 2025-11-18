@@ -21,6 +21,7 @@ GPIOInitConfig_t gpio_config[] = {
     GPIO_INIT_SPI1_SCK_PA5, // SCK
     GPIO_INIT_SPI1_MISO_PA6, // MISO
     GPIO_INIT_SPI1_MOSI_PA7, // MOSI
+    GPIO_INIT_SPI1_CS_PA4, // CS (manual control)
 };
 
 extern uint32_t APB1ClockRateHz;
@@ -86,12 +87,16 @@ defineThreadStack(ledblink2, 300, osPriorityNormal, 64);
 defineThreadStack(ledblink3, 500, osPriorityNormal, 64);
 defineThreadStack(ledblink4, 1000, osPriorityNormal, 64);
 defineThreadStack(usartSend, 1000, osPriorityNormal, 1024);
-defineThreadStack(mmcTest, 100, osPriorityNormal, 1024);
+defineThreadStack(mmcTest, 50, osPriorityNormal, 1024);
 
 defineStaticQueue(myQueue, uint32_t, 0x45);
 defineStaticSemaphore(mySemaphore);
 
 uint16_t axis_data;
+
+int32_t raw_x = 0;
+int32_t raw_y = 0;
+int32_t raw_z = 0;
 
 int main() {
     osKernelInitialize();
@@ -147,22 +152,73 @@ void ledblink4() {
 }
 
 void mmcTest() {
-    uint8_t tx_buf[3];
-    for (int axis = 0; axis < 3; axis++) {
-        uint8_t reg_addr = axis * 2; // 0x00, 0x02, 0x04
-        tx_buf[0] = 0x80 | reg_addr; // Read command: MSB=1 + address
-        tx_buf[1] = 0x00; // dummy byte 1
-        tx_buf[2] = 0x00; // dummy byte 2
+    uint32_t nextStartTick = getTick();   
+    uint32_t measReadyTick = 0;          
+    bool measuring = false;
 
-        PHAL_writeGPIO(GPIOA, 4, false); // CS low
+    uint8_t tx_write[2];
+    uint8_t rx_write[2];
+    uint8_t tx_read[8];
+    uint8_t rx_read[8];
 
-        if (!PHAL_SPI_transfer_noDMA(&spi1_cfg, tx_buf, sizeof(tx_buf), sizeof(spi_rx_buf), spi_rx_buf)) {
-            PHAL_writeGPIO(GPIOA, 4, true); // CS high
+    // Make sure CS is high before starting (idle)
+    PHAL_writeGPIO(GPIOA, 4, true);
+
+    while (1) {
+        uint32_t now = getTick();
+        int32_t diffStart = (int32_t)(now - nextStartTick);
+
+        // Start a new measurement when scheduled 
+        if (!measuring && (diffStart >= 0)) {
+            tx_write[0] = 0x09;  // register address
+            tx_write[1] = 0x01;  
+
+            PHAL_writeGPIO(GPIOA, 4, false); // CS low
+            PHAL_SPI_transfer_noDMA(&spi1_cfg, tx_write, 2, 2, rx_write);
+            PHAL_writeGPIO(GPIOA, 4, true);  // CS high
+
+            measuring = true;
+            // default measurement time for BW=100Hz is ~8ms 
+            measReadyTick = now + 8;
+
+            // schedule next measurement start 
+            nextStartTick = now + 50;
         }
 
-        PHAL_writeGPIO(GPIOA, 4, true); // CS high
+        // If measurement ready, read registers and parse
+        if (measuring) {
+            int32_t diffReady = (int32_t)(now - measReadyTick);
+            if (diffReady >= 0) {
+                // Read 7 data bytes starting at register 0x00 with read bit set (0x80)
+                tx_read[0] = 0x80; // read starting at 0x00 (read bit = 1)
+                tx_read[1] = 0;
+                tx_read[2] = 0;
+                tx_read[3] = 0;
+                tx_read[4] = 0;
+                tx_read[5] = 0;
+                tx_read[6] = 0;
+                tx_read[7] = 0;
 
-        axis_data = ((uint16_t)spi_rx_buf[1] << 8) | spi_rx_buf[2];
+                PHAL_writeGPIO(GPIOA, 4, false);
+                PHAL_SPI_transfer_noDMA(&spi1_cfg, tx_read, 8, 8, rx_read);
+                PHAL_writeGPIO(GPIOA, 4, true);
+
+                uint32_t X0 = rx_read[1];
+                uint32_t X1 = rx_read[2];
+                uint32_t Y0 = rx_read[3];
+                uint32_t Y1 = rx_read[4];
+                uint32_t Z0 = rx_read[5];
+                uint32_t Z1 = rx_read[6];
+                uint32_t XYZ2 = rx_read[7];
+
+                raw_x = (int32_t)((X0 << 10) | (X1 << 2) | ((XYZ2 >> 6) & 0x03));
+                raw_y = (int32_t)((Y0 << 10) | (Y1 << 2) | ((XYZ2 >> 4) & 0x03));
+                raw_z = (int32_t)((Z0 << 10) | (Z1 << 2) | ((XYZ2 >> 2) & 0x03));
+
+                // done reading this measurement
+                measuring = false;
+            }
+        }
     }
 }
 
