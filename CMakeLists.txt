@@ -59,6 +59,7 @@ set(COMMON_MODULES
     common/queue
     common/common_defs
     common/log
+    common/profiling
     # common/daq
     common/amk
     common/strbuf
