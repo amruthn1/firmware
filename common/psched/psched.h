@@ -81,7 +81,9 @@ extern sched_t sched;
 
 // Prototypes
 int taskCreate(func_ptr_t func, uint16_t task_time);
+int taskCreateWithProfiling(func_ptr_t func, uint16_t task_time, uint16_t curr_task_id);
 int taskCreateBackground(func_ptr_t func);
+int taskCreateBackgroundWithProfiling(func_ptr_t func, uint16_t curr_task_id);
 void taskDelete(uint8_t type, uint8_t task);
 void configureAnim(func_ptr_t anim, func_ptr_t preflight, uint16_t anim_time, uint16_t anim_min_time);
 void registerPreflightComplete(uint8_t status);
