@@ -26,6 +26,7 @@ void profDump() {
     for (int i = 0; i < PROF_MAX_TASKS; i++) {
         if (prof_tasks[i].name) {
             float pct = (100.0f * prof_tasks[i].samples) / prof_total_samples;
+            // do something with this
         }
     }
 }

@@ -61,6 +61,8 @@ extern uint32_t SystemCoreClock;
     #error "MCU Arch not supported"
 #endif
 
+#include "runtime_stats.h"
+
 /*  CMSIS-RTOSv2 defines 56 levels of priorities. To be able to use them
  *  all and avoid application misbehavior,
  * configUSE_PORT_OPTIMISED_TASK_SELECTION must be set to 0 and
@@ -92,7 +94,7 @@ extern uint32_t SystemCoreClock;
 #define configUSE_MALLOC_FAILED_HOOK 0
 #define configUSE_APPLICATION_TASK_TAG 0
 #define configUSE_COUNTING_SEMAPHORES 1
-#define configGENERATE_RUN_TIME_STATS 0
+#define configGENERATE_RUN_TIME_STATS 1
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 0
@@ -189,10 +191,14 @@ header file. */
             ;                     \
     }
 
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() (configureTimer())
+#define portGET_RUN_TIME_COUNTER_VALUE() (getCounterValue())
+
 /* Definitions that map the FreeRTOS port interrupt handlers to their CMSIS
    standard names. */
 #define vPortSVCHandler SVC_Handler
 #define xPortPendSVHandler PendSV_Handler
+
 
 /* IMPORTANT: FreeRTOS is using the SysTick as internal time base, thus make
    sure the system and peripherials are using a different time base (TIM based
