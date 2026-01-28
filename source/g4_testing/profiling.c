@@ -3,6 +3,7 @@
 #if (G4_TESTING_CHOSEN == TEST_PROFILING)
 
 #include "common/freertos/freertos.h"
+#include "common/freertos/runtime_stats.h"
 #include "common/phal/adc.h"
 #include "common/phal/dma.h"
 #include "common/phal/gpio.h"
@@ -73,10 +74,11 @@ defineThreadStack(ledblink3, 500, osPriorityNormal, 64);
 defineThreadStack(ledblink4, 1000, osPriorityNormal, 64);
 defineThreadStack(getDebug, 5000, osPriorityNormal, 64);
 
-char *pcWriteBuffer;
+char pcWriteBuffer[512];  
 
-int main() {
+int main() {    
     osKernelInitialize();
+    configureTimer();
 
     if (PHAL_configureClockRates(&clock_config)) {
         HardFault_Handler();
@@ -107,6 +109,7 @@ int main() {
     createThread(ledblink2);
     createThread(ledblink3);
     createThread(ledblink4);
+    createThread(getDebug);
 
     osKernelStart(); // Go!
 
