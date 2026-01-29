@@ -78,7 +78,6 @@ char pcWriteBuffer[512];
 
 int main() {    
     osKernelInitialize();
-    configureTimer();
 
     if (PHAL_configureClockRates(&clock_config)) {
         HardFault_Handler();
@@ -110,6 +109,8 @@ int main() {
     createThread(ledblink3);
     createThread(ledblink4);
     createThread(getDebug);
+
+    configureTimer();
 
     osKernelStart(); // Go!
 
