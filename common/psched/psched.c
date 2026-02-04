@@ -34,7 +34,7 @@ int taskCreateWithProfiling(func_ptr_t func, uint16_t task_time, uint16_t curr_t
     if (sched.fg_count != MAX_TASKS) {
         sched.task_time[sched.fg_count] = task_time;
         sched.task_pointer[sched.fg_count++] = func;
-        curr_task = curr_task_id;
+
         return 0;
     }
 

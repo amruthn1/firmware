@@ -8,6 +8,9 @@
 #define TEST_SPI      3
 #define TEST_CANPILER 4
 #define TEST_PROFILING 5
+#define TEST_BLINKY 0
+#define TEST_FDCAN  1
+
 // Change this define to set the test compiled
 #define G4_TESTING_CHOSEN TEST_PROFILING
 
