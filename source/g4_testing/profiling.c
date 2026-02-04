@@ -68,11 +68,11 @@ static void ledblink3(void);
 static void ledblink4(void);
 static void getDebug(void);
 
-defineThreadStack(ledblink1, 250, osPriorityNormal, 64);
-defineThreadStack(ledblink2, 300, osPriorityNormal, 64);
-defineThreadStack(ledblink3, 500, osPriorityNormal, 64);
-defineThreadStack(ledblink4, 1000, osPriorityNormal, 64);
-defineThreadStack(getDebug, 5000, osPriorityNormal, 64);
+defineThreadStack(ledblink1, 100, osPriorityHigh1, 256);
+defineThreadStack(ledblink2, 100, osPriorityAboveNormal, 256);
+defineThreadStack(ledblink3, 100, osPriorityAboveNormal, 256);
+defineThreadStack(ledblink4, 100, osPriorityLow, 256);
+defineThreadStack(getDebug, 500, osPriorityHigh7, 512);
 
 char pcWriteBuffer[512];  
 
@@ -110,8 +110,6 @@ int main() {
     createThread(ledblink4);
     createThread(getDebug);
 
-    configureTimer();
-
     osKernelStart(); // Go!
 
     return 0;
@@ -119,18 +117,38 @@ int main() {
 
 static void ledblink1(void) {
     PHAL_toggleGPIO(LED_GREEN_PORT, LED_GREEN_PIN);
+    int i = 0;
+    while(i < 50000) {
+        i++;
+        __asm__("nop");
+    }
 }
 
 static void ledblink2(void) {
     PHAL_toggleGPIO(LED_RED_PORT, LED_RED_PIN);
+    int i = 0;
+    while(i < 100000) {
+        i++;
+        __asm__("nop");
+    }
 }
 
 static void ledblink3(void) {
     PHAL_toggleGPIO(LED_BLUE_PORT, LED_BLUE_PIN);
+    int i = 0;
+    while(i < 200000) {
+        i++;
+        __asm__("nop");
+    }
 }
 
 static void ledblink4(void) {
     PHAL_toggleGPIO(LED_ORANGE_PORT, LED_ORANGE_PIN);
+    int i = 0;
+    while(i < 400000) {
+        i++;
+        __asm__("nop");
+    }
 }
 
 static void getDebug(void) {
